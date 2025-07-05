@@ -50,3 +50,27 @@ async def recomend_dino(file: fastapi.UploadFile = None):
     ret_scores = cosine_similarity(pred[None], embeddings)
     print(ret_scores[0])
     return {"paths": ret_paths, "scores": list(map(float, ret_scores[0]))}
+
+
+@app.post("/recomend_custom/")
+async def recomend_custom(file: fastapi.UploadFile = None):
+    if not file.content_type.startswith("image/"):
+        raise fastapi.HTTPException(status_code=400, detail="File must be an image")
+    contents = await file.read()
+    nparr = np.frombuffer(contents, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    if img is None:
+        raise fastapi.HTTPException(status_code=400, detail="Could not decode image")
+
+    with torch.no_grad():
+        img = torch.Tensor(np.moveaxis(cv2.resize(img, (256, 256)), -1, 0))
+        pred, p = custom_model(
+            img
+        )
+    nearest = annoy_custom.get_nns_by_vector(pred, 5)
+    ret_paths = [paths[i] for i in nearest]
+    embeddings = embeddings_test_custom[nearest]
+    ret_scores = cosine_similarity(pred[None], embeddings)
+    print(ret_scores[0])
+    return {"paths": ret_paths, "scores": list(map(float, ret_scores[0]))}
