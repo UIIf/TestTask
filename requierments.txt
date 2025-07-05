@@ -1,2 +1,10 @@
 transformers
 python-multipart
+uvicorn
+torch
+transformers
+fastapi
+annoy
+opencv-python
+scikit-learn
+numpy
